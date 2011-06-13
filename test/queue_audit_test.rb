@@ -1,6 +1,5 @@
 require 'test_helper'
 
-
 module Resque::Durable
   class QueueAuditTest < MiniTest::Unit::TestCase
 
@@ -41,14 +40,16 @@ module Resque::Durable
 
       describe 'complete!' do
 
-        it 'destroys the audit' do
+        it 'updates the completed timestamp' do
           @audit.save!
-          assert !@audit.destroyed?
+          assert !@audit.completed_at?
           assert !@audit.complete?
-          @audit.complete!
+          Timecop.freeze(Time.now) do
+            @audit.complete!
 
-          assert_equal true, @audit.complete?
-          assert_equal true, @audit.destroyed?
+            assert_equal Time.now, @audit.completed_at
+            assert_equal true,     @audit.complete?
+          end
         end
 
       end
@@ -114,6 +115,15 @@ module Resque::Durable
           end
 
           assert_equal an_hour_ago, @audit.enqueued_at
+        end
+
+        it 'updates the timeout' do
+          an_hour_ago = 1.hour.ago
+          Timecop.freeze(an_hour_ago) do
+            @audit.enqueued!
+          end
+
+          assert_equal (an_hour_ago + 10.minutes), @audit.timeout_at
         end
 
       end

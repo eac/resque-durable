@@ -9,26 +9,44 @@ module Resque
       # enqueued_id
       # queue_name
       # payload
-      # duration
       # enqueue_count
       # enqueued_at
+      # completed_at
+      # timeout_at
       # updated_at
       # created_at
-      class_attribute :default_duration
-      self.default_duration = 10.minutes
+      class_attribute :duration
+      self.duration = 10.minutes
 
       validates_length_of   :payload, :in => 1..5000
       validates_presence_of :enqueued_id, :queue_name, :payload
 
-      validates_inclusion_of :duration, :in => 1.minute..1.day
+      validates_inclusion_of :duration, :in => 1.minute..3.hours
 
       named_scope :older_than, lambda { |date|
         { :conditions => [ 'created_at > ?', date ] }
       }
 
       named_scope :failed, lambda {
-        { :conditions => [ 'enqueued_at < ?', default_duration.ago.utc ] }
+        { :conditions => [ 'completed_at is null AND timeout_at < ?', Time.now.utc ] }
       }
+
+      named_scope :complete, lambda {
+        { :conditions => 'completed_at is not null' }
+      }
+
+      module Recovery
+
+        def recover
+          failed.find_each { |audit| audit.enqueue if audit.retryable? }
+        end
+
+        def cleanup(date)
+          older_than(date).destroy_all
+        end
+
+      end
+      extend Recovery
 
       def self.find_or_initialize_by_args(args)
         params = args.last
@@ -59,33 +77,27 @@ module Resque
       end
 
       def enqueue
-        queue.enqueue(payload)
+        queue.enqueue(*payload)
       end
 
       def enqueued!
         self.enqueued_at    = Time.now.utc
+        self.timeout_at     = enqueued_at + duration
         self.enqueue_count += 1
         save!
       end
 
       def complete!
-        destroy
+        self.completed_at = Time.now.utc
+        save!
       end
 
       def complete?
-        destroyed?
-      end
-
-      def duration
-        super || self.duration = default_duration
+        completed_at.present?
       end
 
       def retryable?
         Time.now > (timeout_at + delay)
-      end
-
-      def timeout_at
-        enqueued_at + duration
       end
 
       # 1, 8, 27, 64, 125, 216, etc. minutes.
