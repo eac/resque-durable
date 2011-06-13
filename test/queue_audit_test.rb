@@ -1,34 +1,8 @@
 require 'test_helper'
-require 'active_record'
 
-ActiveRecord::Base.establish_connection(YAML.load_file('test/database.yml')['test'])
-#require 'schema'
 
 module Resque::Durable
   class QueueAuditTest < MiniTest::Unit::TestCase
-
-
-    class MailQueue
-
-      class << self
-        def data=(data)
-          @data = data
-        end
-
-        def data
-          @data
-        end
-
-        def pop
-          @data.pop
-        end
-
-        def enqueue(payload)
-          @data.push(payload)
-        end
-      end
-
-    end
 
     describe 'Queue Audit' do
       after do
@@ -40,10 +14,43 @@ module Resque::Durable
         @queue.data = []
 
         @audit = QueueAudit.new.tap do |audit|
-          audit.enqueued_id = Time.now.to_f
           audit.queue       = @queue
-          audit.payload     = '{"hello": 3}'
+          audit.payload     = [ 'hello', { 'id' => Time.now.to_f } ]
         end
+      end
+
+      describe 'find_or_initialize_by_args' do
+
+        it 'finds the audit when the enqueued id is available' do
+          @audit.save!
+          assert @audit.enqueued_id
+          audit = QueueAudit.find_or_initialize_by_args(@audit.payload)
+
+          assert_equal @audit, audit
+        end
+
+        it 'builds an audit when no enqueued id is available' do
+          GUID.expects(:generate).returns('1/2/3')
+          audit = QueueAudit.find_or_initialize_by_args([ 'new', {} ])
+          assert audit.new_record?
+          assert_equal '1/2/3', audit.enqueued_id
+          audit.save!
+        end
+
+      end
+
+      describe 'complete!' do
+
+        it 'destroys the audit' do
+          @audit.save!
+          assert !@audit.destroyed?
+          assert !@audit.complete?
+          @audit.complete!
+
+          assert_equal true, @audit.complete?
+          assert_equal true, @audit.destroyed?
+        end
+
       end
 
       describe 'older than' do
@@ -65,8 +72,7 @@ module Resque::Durable
 
       describe 'failed' do
         before do
-          @audit.save!
-          @audit.enqueue
+          @audit.enqueued!
         end
 
         it 'provides audits enqueued for more than than the expected run duration' do
@@ -91,16 +97,20 @@ module Resque::Durable
           assert_equal @audit.payload, @queue.pop
         end
 
+      end
+
+      describe 'enqueued!' do
+
         it 'increments the enqueue count' do
           assert_equal 0, @audit.enqueue_count
-          @audit.enqueue
+          @audit.enqueued!
           assert_equal 1, @audit.enqueue_count
         end
 
         it 'updates the enqueued timestamp' do
           an_hour_ago = 1.hour.ago
           Timecop.freeze(an_hour_ago) do
-            @audit.enqueue
+            @audit.enqueued!
           end
 
           assert_equal an_hour_ago, @audit.enqueued_at

@@ -30,6 +30,26 @@ module Resque
         { :conditions => [ 'enqueued_at < ?', default_duration.ago.utc ] }
       }
 
+      def self.find_or_initialize_by_args(args)
+        params = args.last
+
+        if id = params['id']
+          find_by_enqueued_id(id)
+        else
+          args.last['id'] = GUID.generate
+          new(:queue => self, :payload => args)
+        end
+      end
+
+      def payload
+        ActiveSupport::JSON.decode(super)
+      end
+
+      def payload=(value)
+        self.enqueued_id = value.last['id']
+        super value.to_json
+      end
+
       def queue=(klass)
         self.queue_name = klass.name
       end
@@ -39,14 +59,21 @@ module Resque
       end
 
       def enqueue
-        enqueued!
-        save!
         queue.enqueue(payload)
       end
 
       def enqueued!
         self.enqueued_at    = Time.now.utc
         self.enqueue_count += 1
+        save!
+      end
+
+      def complete!
+        destroy
+      end
+
+      def complete?
+        destroyed?
       end
 
       def duration
