@@ -1,4 +1,4 @@
-require 'test_helper'
+require File.join(File.dirname(__FILE__), 'test_helper')
 
 module Resque::Durable
   class QueueAuditTest < MiniTest::Unit::TestCase
@@ -12,34 +12,17 @@ module Resque::Durable
         @queue = MailQueue
         @queue.data = []
 
-        @audit = QueueAudit.new.tap do |audit|
-          audit.queue       = @queue
-          audit.payload     = [ 'hello', { 'id' => Time.now.to_f } ]
-        end
+        @audit = QueueAudit.initialize_by_klass_and_args(MailQueueJob, [ 'hello' ])
       end
 
-      describe 'find_or_initialize_by_args' do
-
-        it 'finds the audit when the enqueued id is available' do
+      describe 'save!' do
+        it 'generates a UUID' do
           @audit.save!
           assert @audit.enqueued_id
-          audit = QueueAudit.find_or_initialize_by_args(@audit.payload)
-
-          assert_equal @audit, audit
         end
-
-        it 'builds an audit when no enqueued id is available' do
-          GUID.expects(:generate).returns('1/2/3')
-          audit = QueueAudit.find_or_initialize_by_args([ 'new', {} ])
-          assert audit.new_record?
-          assert_equal '1/2/3', audit.enqueued_id
-          audit.save!
-        end
-
       end
 
       describe 'complete!' do
-
         it 'updates the completed timestamp' do
           @audit.save!
           assert !@audit.completed_at?
@@ -95,7 +78,7 @@ module Resque::Durable
         it 'sends the payload to the queue' do
           assert_equal nil, @queue.pop
           @audit.enqueue
-          assert_equal @audit.payload, @queue.pop
+          assert_equal ['hello', @audit.enqueued_id],  @queue.pop
         end
 
       end
@@ -147,15 +130,6 @@ module Resque::Durable
           Timecop.freeze(1.year.from_now) do
             assert_equal true, @audit.retryable?
           end
-        end
-
-      end
-
-      describe 'queue' do
-
-        it 'is the queue name converted into a constant' do
-          audit = QueueAudit.new(:queue_name => MailQueue.name)
-          assert_equal MailQueue, audit.queue
         end
 
       end

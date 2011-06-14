@@ -4,20 +4,29 @@ module Resque
     autoload :QueueAudit, 'resque/durable/queue_audit'
 
     def enqueue(*args)
-      audit = QueueAudit.find_or_initialize_by_args(args)
+      if args.last.is_a?(QueueAudit)
+        # the audit-is-re-enqueing case
+        audit = args.pop
+      else
+        audit = QueueAudit.initialize_by_klass_and_args(self, args)
+      end
+
+      args << audit.enqueued_id
       audit.enqueued!
      # Logger.info("Audit: ##{audit.id}")
 
-      super
+      super(*args)
+    end
+
+    def before_perform_grab_audit(*args)
+      guid = args.pop
+      audit = QueueAudit.find_by_enqueued_id(guid)
+      args << guid
     end
 
     def after_perform_complete_audit(*args)
-      enqueued_id = args.last['id']
-      audit       = QueueAudit.find_by_enqueued_id(enqueued_id)
-
+      audit = args.pop
       audit.complete!
-     # Logger.info("Audit: complete ##{audit.id}")
     end
-
   end
 end

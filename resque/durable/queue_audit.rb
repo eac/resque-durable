@@ -15,11 +15,9 @@ module Resque
       # timeout_at
       # updated_at
       # created_at
-      class_attribute :duration
-      self.duration = 10.minutes
+      DEFAULT_DURATION = 10.minutes
 
       validates_length_of   :payload, :in => 1..5000
-      validates_presence_of :enqueued_id, :queue_name, :payload
 
       validates_inclusion_of :duration, :in => 1.minute..3.hours
 
@@ -48,15 +46,17 @@ module Resque
       end
       extend Recovery
 
-      def self.find_or_initialize_by_args(args)
-        params = args.last
 
-        if id = params['id']
-          find_by_enqueued_id(id)
-        else
-          args.last['id'] = GUID.generate
-          new(:queue => self, :payload => args)
-        end
+      def self.initialize_by_klass_and_args(job_klass, args)
+        new(:job_klass => job_klass, :payload => args, :enqueued_id => GUID.generate)
+      end
+
+      def job_klass
+        read_attribute(:job_klass).constantize
+      end
+
+      def job_klass=(klass)
+        write_attribute(:job_klass, klass.to_s)
       end
 
       def payload
@@ -64,20 +64,19 @@ module Resque
       end
 
       def payload=(value)
-        self.enqueued_id = value.last['id']
         super value.to_json
       end
 
-      def queue=(klass)
-        self.queue_name = klass.name
-      end
-
       def queue
-        @queue ||= queue_name.constantize
+        Resque.queue_from_class(job_klass)
       end
 
       def enqueue
-        queue.enqueue(*payload)
+        job_klass.enqueue(*(payload << self))
+      end
+
+      def duration
+        job_klass.respond_to?(:job_duration) ? job_klass.job_duration : DEFAULT_DURATION
       end
 
       def enqueued!
@@ -103,6 +102,11 @@ module Resque
       # 1, 8, 27, 64, 125, 216, etc. minutes.
       def delay
         (enqueue_count ** 3).minutes
+      end
+      private
+
+      def ensure_guid
+        self.enqueued_id ||= GUID.generate
       end
 
     end

@@ -6,7 +6,7 @@ require 'minitest/autorun'
 require 'resque/durable'
 require 'active_record'
 ActiveRecord::Base.establish_connection(YAML.load_file('test/database.yml')['test'])
-#require 'schema'
+require 'test/schema'
 
 module Resque
   module Durable
@@ -32,6 +32,16 @@ module Resque
       end
 
     end
+    class AbstractResqueJob
+      def self.enqueue(*args)
+        MailQueue.enqueue(*args)
+      end
+    end
 
+    class MailQueueJob < AbstractResqueJob
+      extend Resque::Durable
+    end
   end
 end
+
+

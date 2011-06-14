@@ -1,4 +1,4 @@
-require 'test_helper'
+require File.join(File.dirname(__FILE__), 'test_helper')
 
 module Resque::Durable
   class DurableTest < MiniTest::Unit::TestCase
@@ -22,7 +22,7 @@ module Resque::Durable
           audit = QueueAudit.find_by_enqueued_id('abc/1/12345')
 
           assert_equal 'abc/1/12345', audit.enqueued_id
-          assert_equal [ 'hello', { 'id' => 'abc/1/12345' } ], DurableQueue.pop
+          assert_equal [ 'hello', {}, 'abc/1/12345' ], DurableQueue.pop
         end
 
       end
@@ -35,8 +35,9 @@ module Resque::Durable
           audit = QueueAudit.find_by_enqueued_id('abc/1/12345')
           assert !audit.complete?
 
-          DurableQueue.after_perform_complete_audit('hello', { 'id' => 'abc/1/12345' })
-          assert_equal nil, QueueAudit.find_by_enqueued_id('abc/1/12345')
+          DurableQueue.after_perform_complete_audit('hello', "foo", audit)
+          audit = QueueAudit.find_by_enqueued_id('abc/1/12345')
+          assert audit.complete?
         end
 
       end
