@@ -19,7 +19,7 @@ module Resque
     end
 
     def audit(args)
-      QueueAudit.find_by_enqueued_id(args.pop)
+      QueueAudit.find_by_enqueued_id(args.last)
     end
 
     def heartbeat(args)
@@ -31,6 +31,11 @@ module Resque
       a.heartbeat!
       yield
       a.complete!
+    end
+
+    def on_failure_set_timeout(exception, *args)
+      a = audit(args)
+      a.fail!
     end
 
     def self.extended(base)

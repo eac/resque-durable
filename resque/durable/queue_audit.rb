@@ -26,7 +26,7 @@ module Resque
       }
 
       named_scope :failed, lambda {
-        { :conditions => [ 'completed_at is null AND timeout_at < ?', Time.now.utc ] }
+        { :conditions => [ 'completed_at is null AND timeout_at < ?', Time.now ] }
       }
 
       named_scope :complete, lambda {
@@ -80,18 +80,22 @@ module Resque
       end
 
       def heartbeat!
-        update_attribute(:timeout_at, Time.now.utc + duration)
+        update_attribute(:timeout_at, Time.now + duration)
+      end
+
+      def fail!
+        update_attribute(:timeout_at, Time.now)
       end
 
       def enqueued!
-        self.enqueued_at    = Time.now.utc
-        self.timeout_at     = enqueued_at + delay
+        self.enqueued_at    = Time.now
+        self.timeout_at     = enqueued_at + duration
         self.enqueue_count += 1
         save!
       end
 
       def complete!
-        self.completed_at = Time.now.utc
+        self.completed_at = Time.now
         save!
       end
 

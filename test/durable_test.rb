@@ -40,23 +40,6 @@ module Resque::Durable
           audit.reload
           assert !audit.complete?
         end
-
-        it 'should be retryable the first minute after failure' do
-          audit = QueueAudit.find_by_enqueued_id('abc/1/12345')
-          assert !audit.complete?
-
-          ts = 1.hour.ago
-          Timecop.freeze(ts) do
-            MailQueueJob.around_perform_manage_audit('hello', "foo", 'abc/1/12345') { raise } rescue nil
-          end
-
-          audit.reload
-          assert_equal ts, audit.timeout_at
-
-          Timecop.freeze(ts - 5.minutes) do
-            assert audit.retryable?
-          end
-        end
       end
     end
   end

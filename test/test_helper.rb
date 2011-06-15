@@ -38,15 +38,17 @@ module Resque
       extend Resque::Durable
       @queue = :test_queue
       def self.perform(one, two, audit)
-        $mail_queue_job_results = true
+        raise Exception, "Failing Job!" if self.fail
       end
+
+      cattr_accessor :fail
     end
   end
 end
 
 def work_queue(name)
-  job = Resque.reserve(name)
-  job.perform
+  worker = Resque::Worker.new(name)
+  worker.process
 end
 
 
