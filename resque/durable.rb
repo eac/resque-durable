@@ -15,18 +15,27 @@ module Resque
       audit.enqueued!
      # Logger.info("Audit: ##{audit.id}")
 
-      super(*args)
+      Resque.enqueue(self, *args)
     end
 
-    def before_perform_grab_audit(*args)
-      guid = args.pop
-      audit = QueueAudit.find_by_enqueued_id(guid)
-      args << guid
+    def audit(args)
+      QueueAudit.find_by_enqueued_id(args.pop)
     end
 
-    def after_perform_complete_audit(*args)
-      audit = args.pop
-      audit.complete!
+    def heartbeat(args)
+      audit(args).heartbeat!
+    end
+
+    def around_perform_manage_audit(*args)
+      a = audit(args)
+      a.heartbeat!
+      yield
+      a.complete!
+    end
+
+    def self.extended(base)
+      base.class_eval { cattr_accessor :job_timeout }
+      base.job_timeout = 10.minutes
     end
   end
 end

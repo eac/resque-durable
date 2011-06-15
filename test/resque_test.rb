@@ -10,5 +10,14 @@ module Resque::Durable
       end
     end
 
+    describe 'A sample job' do
+      it "should work" do
+        MailQueueJob.enqueue(:one, :two)
+        work_queue(:test_queue)
+        assert($mail_queue_job_results)
+      end
+    end
+
+
   end
 end

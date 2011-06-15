@@ -76,14 +76,21 @@ module Resque
       end
 
       def duration
-        job_klass.respond_to?(:job_duration) ? job_klass.job_duration : DEFAULT_DURATION
+        job_klass.job_timeout
+      end
+
+      def heartbeat!
+        update_attribute(:timeout_at, Time.now.utc + duration)
       end
 
       def enqueued!
         self.enqueued_at    = Time.now.utc
-        self.timeout_at     = enqueued_at + duration
         self.enqueue_count += 1
         save!
+      end
+
+      def before_perform
+        heartbeat!
       end
 
       def complete!

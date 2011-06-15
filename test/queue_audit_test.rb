@@ -76,9 +76,8 @@ module Resque::Durable
       describe 'enqueue' do
 
         it 'sends the payload to the queue' do
-          assert_equal nil, @queue.pop
+          Resque.expects(:enqueue).with(MailQueueJob, 'hello', @audit.enqueued_id)
           @audit.enqueue
-          assert_equal ['hello', @audit.enqueued_id],  @queue.pop
         end
 
       end
@@ -100,6 +99,9 @@ module Resque::Durable
           assert_equal an_hour_ago, @audit.enqueued_at
         end
 
+      end
+
+      describe 'before_perform' do
         it 'updates the timeout' do
           an_hour_ago = 1.hour.ago
           Timecop.freeze(an_hour_ago) do
@@ -109,7 +111,17 @@ module Resque::Durable
           assert_equal (an_hour_ago + 10.minutes), @audit.timeout_at
         end
 
+        it 'allows configuration of the timeout' do
+          MailQueueJob.job_timeout = 1.hour
+          an_hour_ago = 1.hour.ago
+          Timecop.freeze(an_hour_ago) do
+            @audit.enqueued!
+          end
+          assert_equal (an_hour_ago + 1.hour).to_i, @audit.timeout_at.to_i
+          MailQueueJob.job_timeout = 10.minutes
+        end
       end
+
 
       describe 'retryable?' do
 
@@ -131,7 +143,22 @@ module Resque::Durable
             assert_equal true, @audit.retryable?
           end
         end
+      end
 
+      describe 'heartbeat!' do
+        it 'extends the timeout_at timestamp' do
+          ts = 1.hour.ago
+          Timecop.freeze(ts) do
+            @audit.enqueued!
+          end
+          assert_equal ts + 10.minutes, @audit.timeout_at
+
+          ts = 30.minutes.ago
+          Timecop.freeze(ts) do
+            @audit.heartbeat!
+          end
+          assert_equal ts + 10.minutes, @audit.timeout_at
+        end
       end
 
       it 'has an exponential delay based on enqueue attempts' do
