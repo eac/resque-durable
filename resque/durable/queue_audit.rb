@@ -85,12 +85,9 @@ module Resque
 
       def enqueued!
         self.enqueued_at    = Time.now.utc
+        self.timeout_at     = enqueued_at + delay
         self.enqueue_count += 1
         save!
-      end
-
-      def before_perform
-        heartbeat!
       end
 
       def complete!
