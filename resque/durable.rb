@@ -1,6 +1,7 @@
 module Resque
   module Durable
     autoload :GUID,       'resque/durable/guid'
+    autoload :Monitor,    'resque/durable/monitor'
     autoload :QueueAudit, 'resque/durable/queue_audit'
 
     def enqueue(*args)
