@@ -5,6 +5,7 @@ module Resque::Durable
 
     describe 'Durable queue' do
       before do
+        debugger
         QueueAudit.delete_all
         GUID.expects(:generate).returns('abc/1/12345')
         Resque.expects(:enqueue).with(Resque::Durable::MailQueueJob, :foo, :bar, 'abc/1/12345')

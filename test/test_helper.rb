@@ -1,13 +1,16 @@
 require 'rubygems'
 require 'bundler/setup'
 Bundler.require(:test)
-require 'minitest/autorun'
+$LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__)))                      # test
+$LOAD_PATH.unshift(File.expand_path(File.join(File.dirname(__FILE__), '../lib'))) # lib
 
-require File.join(File.dirname(__FILE__), '../resque/durable')
+require 'minitest/autorun'
 require 'active_record'
-ActiveRecord::Base.establish_connection(YAML.load_file(File.join(File.dirname(__FILE__),'database.yml'))['test'])
-ActiveRecord::Base.establish_connection(YAML.load_file(File.join(File.dirname(__FILE__),'database.yml'))['test'])
-require File.join(File.dirname(__FILE__), 'schema')
+require 'resque/durable'
+
+database_config = YAML.load_file(File.join(File.dirname(__FILE__), 'database.yml'))
+ActiveRecord::Base.establish_connection(database_config['test'])
+require 'schema'
 
 module Resque
   module Durable
