@@ -29,6 +29,7 @@ module Resque
     def around_perform_manage_audit(*args)
       a = audit(args)
       a.heartbeat!
+      return if a.complete?
       yield
       a.complete!
     end

@@ -22,6 +22,29 @@ module Resque::Durable
         end
       end
 
+      describe 'An completed job that is re-enqueued' do
+        before do
+          Resque::Durable::GUID.stubs(:generate).returns('12345')
+          MailQueueJob.enqueue(:one, :two)
+        end
+
+        it 'does not get tried again' do
+          worked_at = 1.day.ago
+          Time.stubs(:now).returns(worked_at)
+          work_queue(:test_queue)
+
+          audit = QueueAudit.find_by_enqueued_id('12345')
+          assert audit.complete?
+          assert_equal worked_at.to_i, audit.completed_at.to_i
+
+          audit.enqueue
+          Time.stubs(:now).returns(worked_at + 1.hour)
+          work_queue(:test_queue)
+          assert_equal worked_at.to_i, audit.reload.completed_at.to_i
+        end
+
+      end
+
       describe 'A failing job' do
         before do
           @ts = 1.hour.ago

@@ -1,5 +1,6 @@
 ActiveRecord::Schema.define(:version => 1) do
 
+  drop_table(:durable_queue_audits) rescue nil
   create_table(:durable_queue_audits) do |t|
     t.string   :enqueued_id, :null => false
     t.string   :job_klass,  :null => false
@@ -9,7 +10,7 @@ ActiveRecord::Schema.define(:version => 1) do
     t.datetime :completed_at
     t.datetime :timeout_at
     t.timestamps
-  end rescue nil
-  add_index(:durable_queue_audits, :enqueued_id, :unique => true) rescue nil
+  end
+  add_index(:durable_queue_audits, :enqueued_id, :unique => true)
 
 end
