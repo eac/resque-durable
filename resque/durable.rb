@@ -13,7 +13,6 @@ module Resque
 
       args << audit.enqueued_id
       audit.enqueued!
-     # Logger.info("Audit: ##{audit.id}")
 
       Resque.enqueue(self, *args)
     end
