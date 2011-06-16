@@ -111,11 +111,6 @@ module Resque
       def delay
         (enqueue_count ** 3).minutes
       end
-      private
-
-      def ensure_guid
-        self.enqueued_id ||= GUID.generate
-      end
 
     end
   end
