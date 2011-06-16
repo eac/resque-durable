@@ -1,4 +1,4 @@
-require 'test_helper'
+require File.join(File.dirname(__FILE__), 'test_helper')
 
 module Resque::Durable
   class GUIDTest < MiniTest::Unit::TestCase

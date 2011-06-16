@@ -1,47 +1,46 @@
-require 'test_helper'
+require File.join(File.dirname(__FILE__), 'test_helper')
 
 module Resque::Durable
   class DurableTest < MiniTest::Unit::TestCase
 
-    class DurableQueue < MailQueue
-      extend Resque::Durable
-
-    end
-
     describe 'Durable queue' do
       before do
         QueueAudit.delete_all
-        DurableQueue.data = []
+        GUID.expects(:generate).returns('abc/1/12345')
+        Resque.expects(:enqueue).with(Resque::Durable::MailQueueJob, :foo, :bar, 'abc/1/12345')
+        MailQueueJob.enqueue(:foo, :bar)
       end
 
       describe 'enqueue' do
-
-        it 'audits the enqueue' do
-          GUID.expects(:generate).returns('abc/1/12345')
-          DurableQueue.enqueue('hello', {})
+        it 'creates an audit' do
           audit = QueueAudit.find_by_enqueued_id('abc/1/12345')
 
           assert_equal 'abc/1/12345', audit.enqueued_id
-          assert_equal [ 'hello', { 'id' => 'abc/1/12345' } ], DurableQueue.pop
         end
 
       end
 
-      describe 'after perform' do
-
+      describe 'around perform' do
         it 'completes the audit' do
-          GUID.expects(:generate).returns('abc/1/12345')
-          DurableQueue.enqueue('hello', {})
           audit = QueueAudit.find_by_enqueued_id('abc/1/12345')
           assert !audit.complete?
 
-          DurableQueue.after_perform_complete_audit('hello', { 'id' => 'abc/1/12345' })
-          assert_equal nil, QueueAudit.find_by_enqueued_id('abc/1/12345')
+          MailQueueJob.around_perform_manage_audit('hello', "foo", 'abc/1/12345') {}
+
+          audit = QueueAudit.find_by_enqueued_id('abc/1/12345')
+          assert audit.complete?
         end
 
+        it 'should not complete on failure' do
+          audit = QueueAudit.find_by_enqueued_id('abc/1/12345')
+          assert !audit.complete?
+
+          MailQueueJob.around_perform_manage_audit('hello', "foo", 'abc/1/12345') { raise } rescue nil
+
+          audit.reload
+          assert !audit.complete?
+        end
       end
-
     end
-
   end
 end
