@@ -4,12 +4,20 @@ module Resque
     autoload :Monitor,    'resque/durable/monitor'
     autoload :QueueAudit, 'resque/durable/queue_audit'
 
+    def self.extended(base)
+      base.cattr_accessor :job_timeout
+      base.job_timeout = 10.minutes
+
+      base.cattr_accessor :auditor
+      self.auditor = QueueAudit
+    end
+
     def enqueue(*args)
-      if args.last.is_a?(QueueAudit)
+      if args.last.is_a?(auditor)
         # the audit-is-re-enqueing case
         audit = args.pop
       else
-        audit = QueueAudit.initialize_by_klass_and_args(self, args)
+        audit = auditor.initialize_by_klass_and_args(self, args)
       end
 
       args << audit.enqueued_id
@@ -19,7 +27,7 @@ module Resque
     end
 
     def audit(args)
-      QueueAudit.find_by_enqueued_id(args.last)
+      auditor.find_by_enqueued_id(args.last)
     end
 
     def heartbeat(args)
@@ -39,9 +47,5 @@ module Resque
       a.fail!
     end
 
-    def self.extended(base)
-      base.class_eval { cattr_accessor :job_timeout }
-      base.job_timeout = 10.minutes
-    end
   end
 end
