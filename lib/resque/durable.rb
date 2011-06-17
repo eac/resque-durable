@@ -9,7 +9,7 @@ module Resque
       base.job_timeout = 10.minutes
 
       base.cattr_accessor :auditor
-      self.auditor = QueueAudit
+      base.auditor = QueueAudit
     end
 
     def enqueue(*args)
@@ -17,7 +17,7 @@ module Resque
         # the audit-is-re-enqueing case
         audit = args.pop
       else
-        audit = auditor.initialize_by_klass_and_args(self, args)
+        audit = build_audit(args)
       end
 
       args << audit.enqueued_id
@@ -45,6 +45,10 @@ module Resque
     def on_failure_set_timeout(exception, *args)
       a = audit(args)
       a.fail!
+    end
+
+    def build_audit(args)
+      auditor.initialize_by_klass_and_args(self, args)
     end
 
   end
