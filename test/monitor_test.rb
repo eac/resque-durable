@@ -17,33 +17,31 @@ class MonitorTest < MiniTest::Unit::TestCase
 
   class FakeAudit
 
-    def recover
-      @recover = true
+    def self.recover
     end
 
-    def cleanup(duration)
-      @cleanup = duration
+    def self.cleanup(duration)
     end
 
   end
 
   describe 'Monitor' do
     before do
-      @monitor = TestMonitor.new(FakeAudit.new)
+      @monitor = TestMonitor.new(FakeAudit.dup)
       @monitor.expiration = 3.days
     end
 
     describe 'watch' do
 
       it 'recovers audits' do
-        audit = @monitor.audit
-        audit.expects(:recover)
+        auditor = @monitor.auditor
+        auditor.expects(:recover)
         @monitor.watch
       end
 
       it 'cleans up expired audits' do
-        audit = @monitor.audit
-        audit.expects(:cleanup)
+        auditor = @monitor.auditor
+        auditor.expects(:cleanup)
         @monitor.watch
       end
 

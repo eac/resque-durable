@@ -2,15 +2,15 @@ module Resque
   module Durable
     module Monitor
 
-      attr_accessor :audit, :expiration
+      attr_accessor :auditor, :expiration
 
-      def initialize(audit)
-        @audit = audit
+      def initialize(auditor)
+        @auditor = auditor
       end
 
       def watch
-        audit.recover
-        audit.cleanup(expiration.ago)
+        auditor.recover
+        auditor.cleanup(expiration.ago)
       end
 
       def run
