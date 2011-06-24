@@ -45,11 +45,11 @@ module Resque::Durable
         end
 
         it 'provides audits older than the given date' do
-          assert_equal [ @audit ], QueueAudit.older_than(25.hours.ago)
+          assert_equal [ @audit ], QueueAudit.older_than(23.hours.ago)
         end
 
         it 'does not provide audits newer than the given date' do
-          assert_equal [], QueueAudit.older_than(23.hours.ago)
+          assert_equal [], QueueAudit.older_than(25.hours.ago)
         end
 
       end

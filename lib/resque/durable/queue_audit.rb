@@ -22,7 +22,7 @@ module Resque
       validates_inclusion_of :duration, :in => 1.minute..3.hours
 
       named_scope :older_than, lambda { |date|
-        { :conditions => [ 'created_at > ?', date ] }
+        { :conditions => [ 'created_at < ?', date ] }
       }
 
       named_scope :failed, lambda {
