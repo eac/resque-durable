@@ -2,7 +2,7 @@ module Resque
   module Durable
     module Monitor
 
-      attr_accessor :auditor, :expiration
+      attr_accessor :auditor, :expiration, :wait_duration
 
       def initialize(auditor)
         @auditor = auditor
@@ -24,7 +24,11 @@ module Resque
       end
 
       def wait
-        sleep(1)
+        sleep(wait_duration)
+      end
+
+      def wait_duration
+        @wait_duration ||= 1
       end
 
       def install_signal_handlers

@@ -13,6 +13,10 @@ class MonitorTest < MiniTest::Unit::TestCase
       @sleep = duration
     end
 
+    def sleep_duration
+      @sleep
+    end
+
   end
 
   class FakeAudit
@@ -57,6 +61,16 @@ class MonitorTest < MiniTest::Unit::TestCase
       end
 
     end
+
+    it 'has a configurable wait duration' do
+      @monitor.wait
+      assert_equal(1, @monitor.sleep_duration)
+
+      @monitor.wait_duration = 30
+      @monitor.wait
+      assert_equal(30, @monitor.sleep_duration)
+    end
+
   end
 
 end
