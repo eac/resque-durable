@@ -15,6 +15,14 @@ module Resque::Durable
         @audit = QueueAudit.initialize_by_klass_and_args(MailQueueJob, [ 'hello' ])
       end
 
+      it 'validates the payload is not larger than 5,000 characters' do
+        @audit.payload = [ 'a', 'bcd' ]
+        assert @audit.valid?
+        @audit.payload = [ 'a', 'b' * 5000 ]
+        assert !@audit.valid?
+        assert @audit.errors[:payload_before_type_cast]
+      end
+
       describe 'save!' do
         it 'generates a UUID' do
           @audit.save!

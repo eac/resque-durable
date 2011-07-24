@@ -17,7 +17,7 @@ module Resque
       # created_at
       DEFAULT_DURATION = 10.minutes
 
-      validates_length_of   :payload, :in => 1..5000
+      validates_length_of    :payload_before_type_cast, :in => 1..5000
 
       validates_inclusion_of :duration, :in => 1.minute..3.hours
 
