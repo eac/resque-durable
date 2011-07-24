@@ -21,7 +21,11 @@ module Resque
       end
 
       args << audit.enqueued_id
-      audit.enqueued!
+      begin
+        audit.enqueued!
+      rescue Exception => e
+        audit_failed(e)
+      end
 
       Resque.enqueue(self, *args)
     end
@@ -49,6 +53,10 @@ module Resque
 
     def build_audit(args)
       auditor.initialize_by_klass_and_args(self, args)
+    end
+
+    def audit_failed(e)
+      raise e
     end
 
   end

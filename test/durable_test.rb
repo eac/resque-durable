@@ -45,7 +45,7 @@ module Resque::Durable
           audit = QueueAudit.find_by_enqueued_id('abc/1/12345')
           assert !audit.complete?
           MailQueueJob.around_perform_manage_audit('hello', "foo", 'abc/1/12345') {}
-          assert audit.complete?
+          assert audit.reload.complete?
 
           MailQueueJob.around_perform_manage_audit('hello', "foo", 'abc/1/12345') do
             assert false, 'Should not have been executed'
