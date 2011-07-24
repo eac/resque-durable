@@ -31,24 +31,32 @@ module Resque
     end
 
     def audit(args)
-      auditor.find_by_enqueued_id(args.last)
+      audit = auditor.find_by_enqueued_id(args.last)
+      audit_failed(ArgumentError.new("Could not find audit: #{args.last}")) if audit.nil?
+      audit
     end
 
     def heartbeat(args)
-      audit(args).heartbeat!
+      if a = audit(args)
+        a.heartbeat!
+      end
     end
 
     def around_perform_manage_audit(*args)
-      a = audit(args)
-      a.heartbeat!
-      return if a.complete?
-      yield
-      a.complete!
+      if a = audit(args)
+        a.heartbeat!
+        return if a.complete?
+        yield
+        a.complete!
+      else
+        yield
+      end
     end
 
     def on_failure_set_timeout(exception, *args)
-      a = audit(args)
-      a.fail!
+      if a = audit(args)
+        a.fail!
+      end
     end
 
     def build_audit(args)

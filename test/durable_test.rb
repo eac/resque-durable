@@ -20,6 +20,18 @@ module Resque::Durable
 
       end
 
+      describe 'a missing audit' do
+
+        it 'is reported with an exception' do
+          audit = QueueAudit.find_by_enqueued_id('abc/1/12345')
+          audit.destroy
+          assert_raises(ArgumentError) do
+            MailQueueJob.around_perform_manage_audit('hello', "foo", 'abc/1/12345') {}
+          end
+        end
+
+      end
+
       describe 'around perform' do
         it 'completes the audit' do
           audit = QueueAudit.find_by_enqueued_id('abc/1/12345')
