@@ -6,13 +6,50 @@ module Resque::Durable
     describe 'Durable queue' do
       before do
         QueueAudit.delete_all
-        GUID.expects(:generate).returns('abc/1/12345')
+        GUID.stubs(:generate).returns('abc/1/12345')
         Resque.expects(:enqueue).with(Resque::Durable::MailQueueJob, :foo, :bar, 'abc/1/12345')
         MailQueueJob.enqueue(:foo, :bar)
       end
 
       describe 'enqueue' do
         it 'creates an audit' do
+          audit = QueueAudit.find_by_enqueued_id('abc/1/12345')
+
+          assert_equal 'abc/1/12345', audit.enqueued_id
+        end
+
+      end
+
+      describe 'enqueue failure' do
+        before do
+          QueueAudit.delete_all
+          Resque.expects(:enqueue).raises(ArgumentError.new)
+        end
+
+        it 'raises an error by default' do
+          assert_raises(ArgumentError) do
+            MailQueueJob.enqueue(:ka, :boom)
+          end
+        end
+
+        it 'has overridable exception handling' do
+          @queue = MailQueueJob.clone
+          def @queue.enqueue_failed(exception)
+            @enqueue_failed = true
+          end
+
+          def @queue.enqueue_failed?
+            @enqueue_failed == true
+          end
+
+          @queue.enqueue(:ka, :boom)
+          assert @queue.enqueue_failed?
+        end
+
+        it 'creates an audit' do
+          assert_raises(ArgumentError) do
+            MailQueueJob.enqueue(:ka, :boom)
+          end
           audit = QueueAudit.find_by_enqueued_id('abc/1/12345')
 
           assert_equal 'abc/1/12345', audit.enqueued_id
