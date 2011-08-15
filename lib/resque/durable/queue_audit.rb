@@ -26,7 +26,7 @@ module Resque
       }
 
       named_scope :failed, lambda {
-        { :conditions => [ 'completed_at is null AND timeout_at < ?', Time.now ] }
+        { :conditions => [ 'completed_at is null AND timeout_at < ?', Time.now ], :order => 'timeout_at asc' }
       }
 
       named_scope :complete, lambda {
@@ -36,7 +36,7 @@ module Resque
       module Recovery
 
         def recover
-          failed.find_each { |audit| audit.enqueue if audit.retryable? }
+          failed.all(:limit => 500).each { |audit| audit.enqueue if audit.retryable? }
         end
 
         def cleanup(date)
