@@ -11,7 +11,8 @@ module Resque::Durable
         process_id   = Process.pid
 
         Timecop.freeze(current_time) do
-          assert_equal "#{hostname}/#{process_id}/#{current_time.to_f}", GUID.generate
+          assert_equal "#{hostname}/#{process_id}/#{current_time.to_i}/1", GUID.generate
+          assert_equal "#{hostname}/#{process_id}/#{current_time.to_i}/2", GUID.generate
         end
 
       end
