@@ -26,7 +26,7 @@ module Resque
       }
 
       named_scope :failed, lambda {
-        { :conditions => [ 'completed_at is null AND timeout_at < ?', Time.now ], :order => 'timeout_at asc' }
+        { :conditions => [ 'completed_at is null AND timeout_at < ?', Time.now.utc ], :order => 'timeout_at asc' }
       }
 
       named_scope :complete, lambda {
@@ -80,22 +80,22 @@ module Resque
       end
 
       def heartbeat!
-        update_attribute(:timeout_at, Time.now + duration)
+        update_attribute(:timeout_at, Time.now.utc + duration)
       end
 
       def fail!
-        update_attribute(:timeout_at, Time.now)
+        update_attribute(:timeout_at, Time.now.utc)
       end
 
       def enqueued!
-        self.enqueued_at    = Time.now
+        self.enqueued_at    = Time.now.utc
         self.timeout_at     = enqueued_at + duration
         self.enqueue_count += 1
         save!
       end
 
       def complete!
-        self.completed_at = Time.now
+        self.completed_at = Time.now.utc
         save!
       end
 
@@ -104,7 +104,7 @@ module Resque
       end
 
       def retryable?
-        Time.now > (timeout_at + delay)
+        Time.now.utc > (timeout_at + delay)
       end
 
       # 1, 8, 27, 64, 125, 216, etc. minutes.
