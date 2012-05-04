@@ -33,7 +33,8 @@ module Resque::Durable
         end
 
         it 'has overridable exception handling' do
-          @queue = MailQueueJob.clone
+          @queue = Class.new(MailQueueJob)
+
           def @queue.enqueue_failed(exception)
             @enqueue_failed = true
           end
