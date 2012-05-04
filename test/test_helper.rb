@@ -15,6 +15,12 @@ Time.zone = Time.__send__(:get_zone, 'UTC')
 Time.zone_default = Time.__send__(:get_zone, 'UTC')
 require 'schema'
 
+MiniTest::Unit::TestCase.add_teardown_hook { Resque::Durable::QueueAudit.delete_all }
+MiniTest::Unit::TestCase.add_teardown_hook do
+  Mocha::Mockery.instance.teardown
+  Mocha::Mockery.reset_instance
+end
+
 module Resque
   module Durable
 
