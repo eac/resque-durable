@@ -63,16 +63,12 @@ module Resque::Durable
           assert !@audit.complete?
         end
 
-        it "should stamp its timeout_at with time.now" do
-          assert_equal Time.now.to_i,  @audit.timeout_at.to_i
-        end
-
         it "should not be immediately retryable" do
           assert !@audit.retryable?
         end
 
-        it "should be retryable in a minute" do
-          Time.stubs(:now).returns(@ts + 1.minutes)
+        it "should eventually be retryable" do
+          Time.stubs(:now).returns(@ts + 1.hour)
           assert @audit.retryable?
         end
 
@@ -90,8 +86,6 @@ module Resque::Durable
           end
         end
 
-        it "should backoff exponentially if it keeps failing" do
-        end
       end
     end
   end

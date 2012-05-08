@@ -55,12 +55,6 @@ module Resque
       end
     end
 
-    def on_failure_set_timeout(exception, *args)
-      if a = audit(args)
-        a.fail!
-      end
-    end
-
     def build_audit(args)
       auditor.initialize_by_klass_and_args(self, args)
     end
