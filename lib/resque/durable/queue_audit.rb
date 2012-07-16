@@ -26,7 +26,7 @@ module Resque
       }
 
       named_scope :failed, lambda {
-        { :conditions => [ 'completed_at is null AND timeout_at < ?', Time.now.utc ], :order => 'timeout_at asc' }
+        { :conditions => [ 'completed_at is null AND timeout_at < ?', Time.now.utc ], :order => 'timeout_at asc', :limit => 500 }
       }
 
       named_scope :complete, lambda {
@@ -36,7 +36,14 @@ module Resque
       module Recovery
 
         def recover
-          failed.all(:limit => 500).each { |audit| audit.enqueue if audit.retryable? }
+          failed.each do |audit|
+            begin
+              audit.enqueue if audit.retryable?
+            rescue => e
+              message = "#{e.class.name}: #{e.message}\n#{(e.backtrace || []).join("\n")}"
+              logger && logger.error("Failed to retry audit #{audit.enqueued_id}: #{message}")
+            end
+          end
         end
 
         def cleanup(date)
@@ -45,7 +52,6 @@ module Resque
 
       end
       extend Recovery
-
 
       def self.initialize_by_klass_and_args(job_klass, args)
         new(:job_klass => job_klass, :payload => args, :enqueued_id => GUID.generate)

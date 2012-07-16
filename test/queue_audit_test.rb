@@ -23,6 +23,34 @@ module Resque::Durable
         assert @audit.errors[:payload_before_type_cast]
       end
 
+      describe 'recover' do
+
+        describe 'failing to retry' do
+          before do
+            @good_audit = QueueAudit.initialize_by_klass_and_args(MailQueueJob, [ 'good' ])
+            @good_audit.stubs(:retryable?).returns(true)
+
+            @bad_audit  = QueueAudit.initialize_by_klass_and_args(MailQueueJob, [ 'bad' ])
+            @bad_audit.stubs(:retryable?).returns(true)
+            @bad_audit.expects(:enqueue).raises('Boom!')
+
+            QueueAudit.stubs(:failed).returns([ @good_audit, @bad_audit ])
+          end
+
+          it 'does not stop retrying other jobs' do
+            @good_audit.expects(:enqueue)
+            QueueAudit.recover
+          end
+
+          it 'records the failure' do
+            @bad_audit.expects(:fail!)
+            QueueAudit.recover
+          end
+
+        end
+
+      end
+
       describe 'save!' do
         it 'generates a UUID' do
           @audit.save!
