@@ -4,7 +4,7 @@ require 'active_support/core_ext/class'
 module Resque
   module Durable
     class QueueAudit < ActiveRecord::Base
-      set_table_name :durable_queue_audits
+      self.table_name = :durable_queue_audits
       # id
       # enqueued_id
       # queue_name
@@ -21,15 +21,15 @@ module Resque
 
       validates_inclusion_of :duration, :in => 1.minute..3.hours
 
-      named_scope :older_than, lambda { |date|
+      scope :older_than, lambda { |date|
         { :conditions => [ 'created_at < ?', date ] }
       }
 
-      named_scope :failed, lambda {
+      scope :failed, lambda {
         { :conditions => [ 'completed_at is null AND timeout_at < ?', Time.now.utc ], :order => 'timeout_at asc', :limit => 500 }
       }
 
-      named_scope :complete, lambda {
+      scope :complete, lambda {
         { :conditions => 'completed_at is not null' }
       }
 
