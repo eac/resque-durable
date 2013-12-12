@@ -1,6 +1,6 @@
-source "http://rubygems.org"
+source "https://rubygems.org"
 
-gem 'activerecord',  '2.3.11'
+gemspec
 
 group :test do
   gem 'rake'
