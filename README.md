@@ -1,4 +1,7 @@
-== What's this? ==
+[![Build Status](https://travis-ci.org/eac/resque-durable.png)](https://travis-ci.org/eac/resque-durable)
+
+
+# What's this?
 
 Resque/Durable allows important jobs to survive when a encountering a failure with Redis or the system in general.
 It does this by adding traditional database-backed audits for durable jobs enqueued in Resque.
@@ -6,11 +9,11 @@ It does this by adding traditional database-backed audits for durable jobs enque
 When an audited job isn't marked as complete after a certain amount of time (10 minutes by default),
 it's considered failed, and will be re-enqueued with exponential backoff until it succeeds or is removed.
 
-== Usage ==
+# Usage
 
 See /examples
 
-== When things go wrong ==
+# When things go wrong
 
 Audits stick around, and will be retried, until completed or expired by the monitoring script (expiration is configurable).
 Due to the backoff delay, a typical job won't be retried more than 10 times in 24 hours, or 20 times in a week.
@@ -19,5 +22,5 @@ If a queue becomes backed up for too long, jobs may become double enqueued.
 The first enqueued job will mark the audit as complete, and the second version of the job won't be worked on.
 This strategy greatly reduces the possibility, but doesn't gaurentee, the same job isn't performed twice.
 
-== License ==
+# License
 MIT
