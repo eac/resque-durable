@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name     = 'resque-durable'
-  s.version  = '1.0.1'
+  s.version  = '1.1.0'
   s.authors  = [ 'Eric Chapweske', 'Ben Osheroff' ]
   s.summary  = 'Resque queue backed by database audits, with automatic retry'
   s.homepage = 'https://github.com/eac/resque-durable'
