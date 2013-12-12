@@ -11,9 +11,9 @@ require 'resque/durable'
 database_config = YAML.load_file(File.join(File.dirname(__FILE__), 'database.yml'))
 ActiveRecord::Base.establish_connection(database_config['test'])
 ActiveRecord::Base.default_timezone = :utc
-Time.zone = Time.__send__(:get_zone, 'UTC')
-Time.zone_default = Time.__send__(:get_zone, 'UTC')
 require 'schema'
+
+I18n.enforce_available_locales = true
 
 MiniTest::Unit::TestCase.add_teardown_hook { Resque::Durable::QueueAudit.delete_all }
 MiniTest::Unit::TestCase.add_teardown_hook do
